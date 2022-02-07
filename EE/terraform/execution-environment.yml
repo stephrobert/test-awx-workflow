@@ -1,0 +1,16 @@
+---
+version: 1
+
+build_arg_defaults:
+  EE_BASE_IMAGE: 'quay.io/ansible/ansible-runner@sha256:1fa60288b1686946783e0ac864a29fa97dfcf0d5776ca6fda77c41fe8f880587'
+
+dependencies:
+  galaxy: requirements.yml
+  python: requirements.txt
+
+additional_build_steps:
+  prepend: |
+        RUN yum install -y yum-utils genisoimage
+        RUN yum-config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
+        RUN yum -y install terraform
+

@@ -1,0 +1,54 @@
+---
+- name: Test
+  hosts: all
+  become: false
+  gather_facts: false
+  vars:
+    token: !vault |
+      $ANSIBLE_VAULT;1.1;AES256
+      37343838393666306361663066633337643433663234386262653066643966323833376136616361
+      6165646331666132393630666265636565396536663736340a356131373730366436613965663865
+      65356663646136643935656239313162376231663563376461306161343337646236336135356432
+      3163383832613035640a353131626464656530613533613139656265393034656231383663653337
+      35653738363636303861306539373034356634336633653364656238376361613764
+
+  tasks:
+    - name: Get info from VM
+      ansible.builtin.shell: "virsh -c qemu+ssh://root@devbox.robert.local/system qemu-agent-command test '{\"execute\":\"guest-network-get-interfaces\"}'"
+      register: info
+      changed_when: info.rc != 0
+      retries: 15
+      delay: 10
+      until: info is success
+    - name: register value
+      ansible.builtin.set_fact:
+        ip_address: "{{ (info.stdout | from_json).return[1]['ip-addresses'][0]['ip-address'] }}"
+    - name: Add Host to inventory
+      ansible.builtin.add_host:
+        name: "{{ ip_address }}"
+        ansible_ssh_host: "{{ ip_address }}"
+        ansible_ssh_user: "ubuntu"
+        group: vmlist
+
+    - name: Create Iventory
+      awx.awx.inventory:
+        controller_host: "http://192.168.1.74:30932"
+        controller_oauthtoken: "{{ token }}"
+        controller_username: "admin"
+        name: "Test"
+        description: "My first Servers"
+        state: present
+        organization: "Default"
+        validate_certs: false
+
+    - name: Add Host to Iventory
+      awx.awx.host:
+        controller_host: "http://192.168.1.74:30932"
+        controller_oauthtoken: "{{ token }}"
+        controller_username: "admin"
+        inventory: "Test"
+        description: "My first Servers"
+        state: present
+        name: "{{ ip_address }}"
+        enabled: true
+        validate_certs: false

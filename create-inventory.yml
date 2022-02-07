@@ -1,0 +1,64 @@
+---
+- name: Test
+  hosts: all
+  become: false
+  gather_facts: false
+  vars:
+    token: !vault |
+      $ANSIBLE_VAULT;1.1;AES256
+      33653263303262396336316133343531306639333732366634323331356163393136653864613865
+      3132613930323166666534383431363063326362353634330a616531366634613939366237306534
+      36613963393764366135383664343765313933633364346337383830313762316637663562333932
+      3339643033323236330a323065313632653637346561356337633639643336386561333937326433
+      31653062393135643132353665383332333836643263363437333338643538653733
+
+  tasks:
+    - name: Get info from VM
+      ansible.builtin.shell: "virsh -c qemu+ssh://root@devbox.robert.local/system qemu-agent-command test '{\"execute\":\"guest-network-get-interfaces\"}'"
+      register: info
+      changed_when: info.rc != 0
+      retries: 15
+      delay: 10
+      until: info is success
+    - name: register value
+      ansible.builtin.set_fact:
+        ip_address: "{{ (info.stdout | from_json).return[1]['ip-addresses'][0]['ip-address'] }}"
+    - name: Add Host to inventory
+      ansible.builtin.add_host:
+        name: "{{ ip_address }}"
+        ansible_ssh_host: "{{ ip_address }}"
+        ansible_ssh_user: "ubuntu"
+        group: vmlist
+
+    - name: Delete Inventory
+      awx.awx.inventory:
+        controller_host: "http://192.168.1.74:30932"
+        controller_oauthtoken: "{{ token }}"
+        controller_username: "admin"
+        name: "Test"
+        state: absent
+        organization: "Default"
+        validate_certs: false
+
+    - name: Create Inventory
+      awx.awx.inventory:
+        controller_host: "http://192.168.1.74:30932"
+        controller_oauthtoken: "{{ token }}"
+        controller_username: "admin"
+        name: "Test"
+        description: "My first Servers"
+        state: present
+        organization: "Default"
+        validate_certs: false
+
+    - name: Add Host to Inventory
+      awx.awx.host:
+        controller_host: "http://192.168.1.74:30932"
+        controller_oauthtoken: "{{ token }}"
+        controller_username: "admin"
+        inventory: "Test"
+        description: "My first Servers"
+        state: present
+        name: "{{ ip_address }}"
+        enabled: true
+        validate_certs: false

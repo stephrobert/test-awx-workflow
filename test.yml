@@ -1,0 +1,9 @@
+---
+- name: Deploy Stack
+  hosts: all
+  become: false
+  gather_facts: false
+
+  tasks:
+    - name: Ping
+      ansible.builtin.ping:
