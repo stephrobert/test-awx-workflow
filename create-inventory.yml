@@ -23,12 +23,6 @@
     - name: register value
       ansible.builtin.set_fact:
         ip_address: "{{ (info.stdout | from_json).return[1]['ip-addresses'][0]['ip-address'] }}"
-    - name: Add Host to inventory
-      ansible.builtin.add_host:
-        name: "{{ ip_address }}"
-        ansible_ssh_host: "{{ ip_address }}"
-        ansible_ssh_user: "ubuntu"
-        group: vmlist
 
     - name: Delete Inventory
       awx.awx.inventory:
