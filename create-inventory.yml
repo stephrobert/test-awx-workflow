@@ -56,3 +56,8 @@
         name: "{{ ip_address }}"
         enabled: true
         validate_certs: false
+
+    - name: Add inventory to Job template Test
+      awx.awx.job_template:
+        name: test-VM
+        inventory: Test
