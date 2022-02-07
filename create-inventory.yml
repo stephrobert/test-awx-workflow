@@ -64,3 +64,5 @@
         controller_username: "admin"
         name: test-VM
         inventory: Test
+        project: test-awx-workflow
+
