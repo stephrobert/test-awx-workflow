@@ -59,5 +59,8 @@
 
     - name: Add inventory to Job template Test
       awx.awx.job_template:
+        controller_host: "http://192.168.1.74:30932"
+        controller_oauthtoken: "{{ token }}"
+        controller_username: "admin"
         name: test-VM
         inventory: Test
